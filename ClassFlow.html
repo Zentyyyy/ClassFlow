@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClassFlow</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>ClassFlow</h1>
+        <div id="nav"></div>
+        <div class="header-right">
+            <span id="welcome-text"></span>
+            <button class="btn-outline" onclick="toggleTheme()" id="theme-btn">🌙</button>
+            <button class="btn-outline" onclick="logout()" id="logout-btn" style="display:none;">Log out</button>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- LOGIN / REGISTER / FORGOT PASSWORD -->
+        <div id="login-view">
+            <section class="login-area">
+
+                <div class="login-box" id="login-box">
+                    <form onsubmit="login(event)">
+                        <h2>Login</h2>
+                        <div class="input-box">
+                            <span class="icon"><ion-icon name="mail"></ion-icon></span>
+                            <input type="email" id="login-email" required placeholder=" ">
+                            <label>Email</label>
+                        </div>
+                        <div class="input-box">
+                            <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+                            <input type="password" id="login-password" required placeholder=" ">
+                            <label>Password</label>
+                        </div>
+                        <div class="remember-forgot">
+                            <label><input type="checkbox" id="remember-me">Remember me</label>
+                            <a href="#" onclick="showBox('forgot-box'); return false;">Forgot Password?</a>
+                        </div>
+                        <button type="submit">Login</button>
+                        <div class="register-link">
+                            <p>Don't have an account? <a href="#" onclick="showBox('register-box'); return false;">Register</a></p>
+                            <p class="small-note">Demo accounts (password 1234):<br>teacher@demo.com, admin@demo.com, michaela@demo.com</p>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="login-box" id="register-box" style="display:none;">
+                    <form id="registerForm" onsubmit="register(event)">
+                        <h2>Register</h2>
+                        <div class="input-box">
+                            <span class="icon"><ion-icon name="person"></ion-icon></span>
+                            <input type="text" id="reg-name" required placeholder=" ">
+                            <label>Full Name</label>
+                        </div>
+                        <div class="input-box">
+                            <span class="icon"><ion-icon name="mail"></ion-icon></span>
+                            <input type="email" id="reg-email" required placeholder=" ">
+                            <label>Email</label>
+                        </div>
+                        <div class="input-box">
+                            <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+                            <input type="password" id="reg-password" required placeholder=" ">
+                            <label>Password (4+ characters)</label>
+                        </div>
+                        <div class="input-box static">
+                            <span class="icon"><ion-icon name="school"></ion-icon></span>
+                            <select id="reg-role">
+                                <option value="student">Student</option>
+                                <option value="teacher">Teacher</option>
+                            </select>
+                            <label>I am a</label>
+                        </div>
+                        <button type="submit">Register</button>
+                        <div class="register-link">
+                            <p>Already have an account? <a href="#" onclick="showBox('login-box'); return false;">Login</a></p>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="login-box" id="forgot-box" style="display:none;">
+                    <form id="forgotForm" onsubmit="forgotPassword(event)">
+                        <h2>Forgot Password</h2>
+                        <div class="input-box">
+                            <span class="icon"><ion-icon name="mail"></ion-icon></span>
+                            <input type="email" id="forgot-email" required placeholder=" ">
+                            <label>Enter your Email</label>
+                        </div>
+                        <button type="submit">Continue</button>
+                        <div class="register-link">
+                            <p><a href="#" onclick="showBox('login-box'); return false;">Back to Login</a></p>
+                        </div>
+                    </form>
+                </div>
+
+            </section>
+        </div>
+
+        <!-- every page after login is shown inside this div -->
+        <div id="content" style="display:none;"></div>
+    </div>
+
+    <script>
+        // ===================== DATA =====================
+        var PASSING = 60;            // passing percentage
+        var currentUser = null;      // the user who is logged in
+        var currentPage = "dashboard";
+        var selectedAssignment = null;
+        var pillReady = false;
+        var users, courses, enrollments, assignments, submissions, decks, quizResults;
+
+        function newId() {
+            return new Date().getTime() + Math.floor(Math.random() * 1000);
+        }
+
+        // starting data (used the first time the page opens)
+        function setupData() {
+            var now = new Date().getTime();
+            var day = 24 * 60 * 60 * 1000;
+
+            users = [
+                { id: 1, name: "Teacher Rivera", email: "teacher@demo.com", password: "1234", role: "teacher" },
+                { id: 2, name: "Admin", email: "admin@demo.com", password: "1234", role: "admin" }
+            ];
+
+            var studentNames = ["Arcenal, Michaela", "Cortez, Ryssa", "Matalang, Jomar", "Virtucio, Nicolle", "Lorico, Jeanette", "Callos, John Vincent", "Lim, Francis"];
+            var studentEmails = ["michaela", "ryssa", "jomar", "nicolle", "jeanette", "john", "francis"];
+            for (var i = 0; i < studentNames.length; i++) {
+                users.push({ id: 10 + i, name: studentNames[i], email: studentEmails[i] + "@demo.com", password: "1234", role: "student" });
+            }
+
+            courses = [
+                { id: 1, code: "ITE 048", name: "Discrete Structures", teacherId: 1 },
+                { id: 2, code: "ITE 031", name: "Data Structures and Algorithms", teacherId: 1 },
+                { id: 3, code: "ITE 300", name: "Object Oriented Programming", teacherId: 1 }
+            ];
+
+            // enroll every student in every course
+            enrollments = [];
+            for (var c = 0; c < courses.length; c++) {
+                for (var s = 0; s < studentNames.length; s++) {
+                    enrollments.push({ courseId: courses[c].id, studentId: 10 + s });
+                }
+            }
+
+            assignments = [
+                { id: 1, courseId: 1, title: "Activity 1: Coding", instructions: "Write a program that prints the first 10 Fibonacci numbers.", deadline: now + 3 * day, points: 100, criteria: "Correct output 60, Clean code 40" },
+                { id: 2, courseId: 3, title: "Activity 1: Database Management System", instructions: "Design a simple student database.", deadline: now + 4 * day, points: 100, criteria: "Tables 50, Relationships 50" },
+                { id: 3, courseId: 2, title: "Personal Portfolio & Layout Design", instructions: "Create a one-page portfolio using HTML and CSS.", deadline: now - 5 * day, points: 50, criteria: "Layout 25, Design 25" }
+            ];
+
+            submissions = [
+                { id: 1, assignmentId: 3, studentId: 10, text: "https://example.com/my-portfolio", file: null, date: now - 6 * day, grade: null, feedback: "" }
+            ];
+
+            decks = [
+                {
+                    id: 1, courseId: 1, title: "Discrete Structures Basics",
+                    cards: [
+                        { q: "A statement that is either true or false", a: "Proposition" },
+                        { q: "The symbol for AND", a: "Conjunction" },
+                        { q: "A set with no elements", a: "Empty set" },
+                        { q: "n! means", a: "Factorial of n" },
+                        { q: "A statement that is always true", a: "Tautology" }
+                    ]
+                }
+            ];
+
+            quizResults = [];
+        }
+
+        function saveData() {
+            var all = { users: users, courses: courses, enrollments: enrollments, assignments: assignments, submissions: submissions, decks: decks, quizResults: quizResults };
+            try {
+                localStorage.setItem("group7_lms", JSON.stringify(all));
+            } catch (e) {
+                alert("Could not save your data (storage is full or blocked).");
+            }
+        }
+
+        function loadData() {
+            var saved = null;
+            try {
+                saved = JSON.parse(localStorage.getItem("group7_lms"));
+            } catch (e) {
+                saved = null;
+            }
+            if (saved && saved.users && saved.users[0].email) {
+                users = saved.users;
+                courses = saved.courses;
+                enrollments = saved.enrollments;
+                assignments = saved.assignments;
+                submissions = saved.submissions;
+                decks = saved.decks;
+                quizResults = saved.quizResults || [];
+            } else {
+                setupData();
+                saveData();
+            }
+        }
+
+        // ===================== HELPER FUNCTIONS =====================
+        function safe(text) {
+            // stops people from typing HTML into our page
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+
+        function formatDate(ms) {
+            return new Date(ms).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+        }
+
+        // finds one item in a list by its id (works for users, courses, etc.)
+        function findById(list, id) {
+            for (var i = 0; i < list.length; i++) {
+                if (list[i].id === id) { return list[i]; }
+            }
+            return null;
+        }
+
+        function isEnrolled(courseId, studentId) {
+            for (var i = 0; i < enrollments.length; i++) {
+                if (enrollments[i].courseId === courseId && enrollments[i].studentId === studentId) { return true; }
+            }
+            return false;
+        }
+
+        function findSubmission(assignmentId, studentId) {
+            for (var i = 0; i < submissions.length; i++) {
+                if (submissions[i].assignmentId === assignmentId && submissions[i].studentId === studentId) { return submissions[i]; }
+            }
+            return null;
+        }
+
+        function countEnrolled(courseId) {
+            var count = 0;
+            for (var i = 0; i < enrollments.length; i++) {
+                if (enrollments[i].courseId === courseId) { count++; }
+            }
+            return count;
+        }
+
+        function countSubmitted(assignmentId) {
+            var count = 0;
+            for (var i = 0; i < submissions.length; i++) {
+                if (submissions[i].assignmentId === assignmentId) { count++; }
+            }
+            return count;
+        }
+
+        // courses that belong to a user
+        function getMyCourses(user) {
+            var list = [];
+            for (var i = 0; i < courses.length; i++) {
+                if (user.role === "admin") {
+                    list.push(courses[i]);
+                } else if (user.role === "teacher" && courses[i].teacherId === user.id) {
+                    list.push(courses[i]);
+                } else if (user.role === "student" && isEnrolled(courses[i].id, user.id)) {
+                    list.push(courses[i]);
+                }
+            }
+            return list;
+        }
+
+        // assignments of the user's courses, earliest deadline first
+        function getMyAssignments(user) {
+            var myCourses = getMyCourses(user);
+            var list = [];
+            for (var i = 0; i < assignments.length; i++) {
+                for (var j = 0; j < myCourses.length; j++) {
+                    if (assignments[i].courseId === myCourses[j].id) { list.push(assignments[i]); }
+                }
+            }
+            list.sort(function (a, b) { return a.deadline - b.deadline; });
+            return list;
+        }
+
+        // PRIVACY RULE: students only get their own submissions
+        function getVisibleSubmissions(user) {
+            var list = [];
+            for (var i = 0; i < submissions.length; i++) {
+                var sub = submissions[i];
+                var a = findById(assignments, sub.assignmentId);
+                if (!a) { continue; }
+                if (user.role === "admin") {
+                    list.push(sub);
+                } else if (user.role === "student" && sub.studentId === user.id) {
+                    list.push(sub);
+                } else if (user.role === "teacher" && findById(courses, a.courseId).teacherId === user.id) {
+                    list.push(sub);
+                }
+            }
+            return list;
+        }
+
+        // PERMISSION CHECKS
+        function canGrade(user, sub) {
+            var a = findById(assignments, sub.assignmentId);
+            return user.role === "teacher" && findById(courses, a.courseId).teacherId === user.id;
+        }
+
+        function canEditAssignment(user, a) {
+            return user.role === "teacher" && findById(courses, a.courseId).teacherId === user.id;
+        }
+
+        function canSubmit(user, a) {
+            return user.role === "student" && isEnrolled(a.courseId, user.id);
+        }
+
+        // returns "Passed" or "Failed"
+        function getResult(grade, points) {
+            if ((grade / points) * 100 >= PASSING) { return "Passed"; }
+            return "Failed";
+        }
+
+        // returns the text and color class for the status badge
+        function getStatus(a, studentId) {
+            var sub = findSubmission(a.id, studentId);
+            var now = new Date().getTime();
+            if (sub && sub.grade !== null) {
+                if (getResult(sub.grade, a.points) === "Passed") { return { text: "Passed", css: "badge-completed" }; }
+                return { text: "Failed", css: "badge-overdue" };
+            }
+            if (sub) {
+                if (sub.date > a.deadline) { return { text: "Submitted late", css: "badge-upcoming" }; }
+                return { text: "Submitted", css: "badge-completed" };
+            }
+            if (a.deadline < now) { return { text: "Overdue", css: "badge-overdue" }; }
+            return { text: "Not submitted", css: "" };
+        }
+
+        function statBox(number, label) {
+            return "<div class='stat-box'><strong>" + number + "</strong>" + label + "</div>";
+        }
+
+        // one line in a list of assignments
+        function assignmentRow(a, studentId) {
+            var status = getStatus(a, studentId);
+            var extra = "";
+            if (status.text === "Overdue") { extra = " overdue"; }
+            return "<div class='row" + extra + "'><div><a onclick='openAssignment(" + a.id + ")'>" + safe(a.title) + "</a><br>" +
+                "<span class='small-note'>" + safe(findById(courses, a.courseId).code) + " · due " + formatDate(a.deadline) + "</span></div>" +
+                "<span class='badge " + status.css + "'>" + status.text + "</span></div>";
+        }
+
+        // ===================== LOGIN, REGISTER, FORGOT PASSWORD =====================
+        function showBox(id) {
+            document.getElementById("login-box").style.display = "none";
+            document.getElementById("register-box").style.display = "none";
+            document.getElementById("forgot-box").style.display = "none";
+            document.getElementById(id).style.display = "block";
+        }
+
+        function login(e) {
+            e.preventDefault();   // stops the page from reloading
+            var email = document.getElementById("login-email").value.trim().toLowerCase();
+            var password = document.getElementById("login-password").value;
+
+            // NOTE: a real system would check a hashed password on a server
+            for (var i = 0; i < users.length; i++) {
+                if (users[i].email === email && users[i].password === password) {
+                    currentUser = users[i];
+
+                    // "Remember me" saves the email for next time
+                    try {
+                        if (document.getElementById("remember-me").checked) {
+                            localStorage.setItem("group7_email", email);
+                        } else {
+                            localStorage.removeItem("group7_email");
+                        }
+                    } catch (err) { }
+
+                    startApp();
+                    return;
+                }
+            }
+            alert("Wrong email or password!");
+        }
+
+        function register(e) {
+            e.preventDefault();
+            var name = document.getElementById("reg-name").value.trim();
+            var email = document.getElementById("reg-email").value.trim().toLowerCase();
+            var password = document.getElementById("reg-password").value;
+            var role = document.getElementById("reg-role").value;
+
+            if (password.length < 4) {
+                alert("Password needs at least 4 characters.");
+                return;
+            }
+            for (var i = 0; i < users.length; i++) {
+                if (users[i].email === email) {
+                    alert("That email is already registered.");
+                    return;
+                }
+            }
+            if (role !== "teacher") { role = "student"; }   // nobody can register as admin
+
+            users.push({ id: newId(), name: name, email: email, password: password, role: role });
+            saveData();
+            alert("Account created! You can log in now.");
+            document.getElementById("registerForm").reset();
+            showBox("login-box");
+        }
+
+        function forgotPassword(e) {
+            e.preventDefault();
+            var email = document.getElementById("forgot-email").value.trim().toLowerCase();
+
+            for (var i = 0; i < users.length; i++) {
+                if (users[i].email === email) {
+                    var newPassword = prompt("Enter your new password (at least 4 characters):");
+                    if (newPassword && newPassword.length >= 4) {
+                        users[i].password = newPassword;
+                        saveData();
+                        alert("Password changed! You can log in now.");
+                        document.getElementById("forgotForm").reset();
+                        showBox("login-box");
+                    } else {
+                        alert("Password was not changed.");
+                    }
+                    return;
+                }
+            }
+            alert("No account found with that email.");
+        }
+
+        function loadRememberedEmail() {
+            try {
+                var saved = localStorage.getItem("group7_email");
+                if (saved) {
+                    document.getElementById("login-email").value = saved;
+                    document.getElementById("remember-me").checked = true;
+                }
+            } catch (err) { }
+        }
+
+        function logout() {
+            currentUser = null;
+            study = null;
+            quiz = null;
+            clearTimeout(quizTimer);
+            pillReady = false;
+            document.getElementById("login-password").value = "";
+            document.getElementById("nav").innerHTML = "";
+            document.getElementById("welcome-text").innerHTML = "";
+            document.getElementById("logout-btn").style.display = "none";
+            document.getElementById("content").style.display = "none";
+            document.getElementById("login-view").style.display = "block";
+            showBox("login-box");
+        }
+
+        // ===================== NAVIGATION =====================
+        function startApp() {
+            document.getElementById("login-view").style.display = "none";
+            document.getElementById("content").style.display = "block";
+            document.getElementById("logout-btn").style.display = "inline-block";
+            document.getElementById("welcome-text").innerHTML = safe(currentUser.name) + " · " + currentUser.role;
+            buildNav();
+            goTo("dashboard");
+        }
+
+        // makes the tab buttons for the user's role
+        function buildNav() {
+            var tabs;
+            if (currentUser.role === "teacher") {
+                tabs = [["dashboard", "Dashboard"], ["courses", "Courses"], ["assignments", "Assignments"], ["flashcards", "Flashcards"], ["gradebook", "Gradebook"]];
+            } else if (currentUser.role === "student") {
+                tabs = [["dashboard", "Dashboard"], ["courses", "Courses"], ["grades", "Grades"], ["flashcards", "Flashcards"]];
+            } else {
+                tabs = [["dashboard", "Dashboard"], ["users", "Users"]];
+            }
+            var html = "<div id='pill'></div>";
+            for (var i = 0; i < tabs.length; i++) {
+                html += "<button id='tab-" + tabs[i][0] + "' onclick=\"goTo('" + tabs[i][0] + "')\">" + tabs[i][1] + "</button>";
+            }
+            document.getElementById("nav").innerHTML = html;
+        }
+
+        // shows a page (every tab calls this function)
+        function goTo(page) {
+            clearTimeout(quizTimer);
+            study = null;
+            quiz = null;
+            currentPage = page;
+            var role = currentUser.role;
+
+            if (page === "dashboard") {
+                if (role === "teacher") { showTeacherDashboard(); }
+                else if (role === "student") { showStudentDashboard(); }
+                else { showAdminDashboard(); }
+            } else if (page === "courses") {
+                if (role === "teacher") { showTeacherCourses(); } else { showStudentCourses(); }
+            } else if (page === "assignments") {
+                showTeacherAssignments();
+            } else if (page === "assignment") {
+                showAssignment();
+            } else if (page === "flashcards") {
+                showFlashcards();
+            } else if (page === "gradebook") {
+                showGradebook();
+            } else if (page === "grades") {
+                showGrades();
+            } else if (page === "users") {
+                showUsers();
+            }
+
+            // make the page slide in
+            var content = document.getElementById("content");
+            content.classList.remove("slide");
+            void content.offsetWidth;
+            content.classList.add("slide");
+
+            highlightTab(page);
+        }
+
+        // reload the current page without the slide animation
+        function refresh() {
+            var tab = currentPage;
+            goTo(tab);
+            document.getElementById("content").classList.remove("slide");
+        }
+
+        function highlightTab(page) {
+            var tabName = page;
+            if (page === "assignment") {
+                // an assignment page belongs to a different tab for each role
+                if (currentUser.role === "teacher") { tabName = "assignments"; } else { tabName = "dashboard"; }
+            }
+            var buttons = document.getElementById("nav").getElementsByTagName("button");
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove("active");
+            }
+            var active = document.getElementById("tab-" + tabName);
+            if (!active) { return; }
+            active.classList.add("active");
+
+            // move the colored box behind the active tab
+            var pill = document.getElementById("pill");
+            if (!pillReady) {
+                pill.style.transition = "none";   // first time: no sliding
+            }
+            pill.style.left = active.offsetLeft + "px";
+            pill.style.top = active.offsetTop + "px";
+            pill.style.width = active.offsetWidth + "px";
+            pill.style.height = active.offsetHeight + "px";
+            if (!pillReady) {
+                pill.offsetWidth;
+                pill.style.transition = "";
+                pillReady = true;
+            }
+        }
+
+        function openAssignment(id) {
+            selectedAssignment = id;
+            goTo("assignment");
+        }
+
+        // ===================== TEACHER PAGES =====================
+        function showTeacherDashboard() {
+            var myCourses = getMyCourses(currentUser);
+            var myAssignments = getMyAssignments(currentUser);
+            var mySubs = getVisibleSubmissions(currentUser);
+            var waiting = 0;
+            for (var i = 0; i < mySubs.length; i++) {
+                if (mySubs[i].grade === null) { waiting++; }
+            }
+
+            var html = "<h2>Teacher dashboard</h2><div class='stats'>" +
+                statBox(myCourses.length, "Courses") + statBox(myAssignments.length, "Assignments") +
+                statBox(mySubs.length, "Submissions") + statBox(waiting, "Waiting for grade") + "</div>";
+
+            html += "<div class='card'><h3>Submission statistics</h3>";
+            for (var j = 0; j < myAssignments.length; j++) {
+                var a = myAssignments[j];
+                var submitted = countSubmitted(a.id);
+                var enrolled = countEnrolled(a.courseId);
+                var css = "";
+                if (submitted < enrolled && a.deadline < new Date().getTime()) { css = "badge-overdue"; }
+                html += "<div class='row'><div><a onclick='openAssignment(" + a.id + ")'>" + safe(a.title) + "</a><br><span class='small-note'>due " + formatDate(a.deadline) + "</span></div>" +
+                    "<span class='badge " + css + "'>" + submitted + "/" + enrolled + " submitted</span></div>";
+            }
+            if (myAssignments.length === 0) { html += "<p class='small-note'>No assignments yet.</p>"; }
+            html += "</div>";
+            document.getElementById("content").innerHTML = html;
+        }
+
+        function showTeacherCourses() {
+            var myCourses = getMyCourses(currentUser);
+            var courseOptions = "";
+            for (var i = 0; i < myCourses.length; i++) {
+                courseOptions += "<option value='" + myCourses[i].id + "'>" + safe(myCourses[i].code) + " - " + safe(myCourses[i].name) + "</option>";
+            }
+            var studentOptions = "";
+            for (var j = 0; j < users.length; j++) {
+                if (users[j].role === "student") {
+                    studentOptions += "<option value='" + users[j].id + "'>" + safe(users[j].name) + "</option>";
+                }
+            }
+
+            var html = "<h2>Courses</h2><div class='two-col'>" +
+                "<div class='card'><h3>New course</h3>" +
+                "<div class='form-group'><label>Course code</label><input type='text' id='new-course-code' placeholder='e.g. ITE 048'></div>" +
+                "<div class='form-group'><label>Course name</label><input type='text' id='new-course-name' placeholder='e.g. Discrete Structures'></div>" +
+                "<button class='btn-primary' onclick='addCourse()'>Create course</button></div>" +
+                "<div class='card'><h3>Enroll a student</h3>" +
+                "<div class='form-group'><label>Course</label><select id='enroll-course'>" + courseOptions + "</select></div>" +
+                "<div class='form-group'><label>Student</label><select id='enroll-student'>" + studentOptions + "</select></div>" +
+                "<button class='btn-primary' onclick='enrollStudent()'>Enroll</button></div></div>";
+
+            for (var k = 0; k < myCourses.length; k++) {
+                var names = "";
+                for (var m = 0; m < enrollments.length; m++) {
+                    if (enrollments[m].courseId === myCourses[k].id) {
+                        names += "<span class='badge'>" + safe(findById(users, enrollments[m].studentId).name) + "</span> ";
+                    }
+                }
+                if (names === "") { names = "<span class='small-note'>No students yet</span>"; }
+                html += "<div class='card'><h3>" + safe(myCourses[k].name) + " <span class='badge'>" + safe(myCourses[k].code) + "</span></h3>" +
+                    "<p class='small-note'>" + countEnrolled(myCourses[k].id) + " students</p><p>" + names + "</p></div>";
+            }
+            document.getElementById("content").innerHTML = html;
+        }
+
+        function addCourse() {
+            var code = document.getElementById("new-course-code").value.trim();
+            var name = document.getElementById("new-course-name").value.trim();
+            if (code === "" || name === "") {
+                alert("Please enter the course code and name.");
+                return;
+            }
+            courses.push({ id: newId(), code: code, name: name, teacherId: currentUser.id });
+            saveData();
+            refresh();
+        }
+
+        function enrollStudent() {
+            var courseId = parseInt(document.getElementById("enroll-course").value);
+            var studentId = parseInt(document.getElementById("enroll-student").value);
+            var course = findById(courses, courseId);
+
+            if (!course || course.teacherId !== currentUser.id) {
+                alert("You can only enroll students in your own courses.");
+                return;
+            }
+            if (isEnrolled(courseId, studentId)) {
+                alert("That student is already enrolled.");
+                return;
+            }
+            enrollments.push({ courseId: courseId, studentId: studentId });
+            saveData();
+            refresh();
+        }
+
+        function showTeacherAssignments() {
+            var myCourses = getMyCourses(currentUser);
+            var myAssignments = getMyAssignments(currentUser);
+            var courseOptions = "";
+            for (var i = 0; i < myCourses.length; i++) {
+                courseOptions += "<option value='" + myCourses[i].id + "'>" + safe(myCourses[i].name) + "</option>";
+            }
+
+            var html = "<h2>Assignments</h2><div class='card'><h3>Create & publish</h3><form onsubmit='publishAssignment(event)'>" +
+                "<div class='form-group'><label>Course</label><select id='a-course'>" + courseOptions + "</select></div>" +
+                "<div class='form-group'><label>Title</label><input type='text' id='a-title' required></div>" +
+                "<div class='form-group'><label>Instructions</label><textarea rows='3' id='a-instructions' required></textarea></div>" +
+                "<div class='two-col'><div class='form-group'><label>Deadline</label><input type='datetime-local' id='a-deadline' required></div>" +
+                "<div class='form-group'><label>Total points</label><input type='number' id='a-points' value='100' required></div></div>" +
+                "<div class='form-group'><label>Grading criteria</label><input type='text' id='a-criteria' placeholder='e.g. Accuracy 50, Clarity 30, Grammar 20'></div>" +
+                "<button type='submit' class='btn-primary'>Publish assignment</button></form></div>";
+
+            html += "<div class='card'><h3>Published assignments</h3>";
+            for (var j = 0; j < myAssignments.length; j++) {
+                var a = myAssignments[j];
+                html += "<div class='row'><div><a onclick='openAssignment(" + a.id + ")'>" + safe(a.title) + "</a><br><span class='small-note'>" +
+                    safe(findById(courses, a.courseId).code) + " · due " + formatDate(a.deadline) + " · " + a.points + " pts</span></div>" +
+                    "<button class='btn-primary btn-small btn-danger' onclick='deleteAssignment(" + a.id + ")'>Delete</button></div>";
+            }
+            if (myAssignments.length === 0) { html += "<p class='small-note'>None yet.</p>"; }
+            html += "</div>";
+            document.getElementById("content").innerHTML = html;
+        }
+
+        function publishAssignment(e) {
+            e.preventDefault();
+            var courseId = parseInt(document.getElementById("a-course").value);
+            var course = findById(courses, courseId);
+            if (!course || course.teacherId !== currentUser.id) {
+                alert("Choose one of your own courses.");
+                return;
+            }
+            assignments.push({
+                id: newId(),
+                courseId: courseId,
+                title: document.getElementById("a-title").value.trim(),
+                instructions: document.getElementById("a-instructions").value.trim(),
+                deadline: new Date(document.getElementById("a-deadline").value).getTime(),
+                points: parseInt(document.getElementById("a-points").value) || 100,
+                criteria: document.getElementById("a-criteria").value.trim()
+            });
+            saveData();
+            alert("Assignment successfully published and added to student trackers!");
+            refresh();
+        }
+
+        function deleteAssignment(id) {
+            var a = findById(assignments, id);
+            if (!a || !canEditAssignment(currentUser, a)) {
+                alert("You are not allowed to do that.");
+                return;
+            }
+            if (!confirm("Delete this assignment and its submissions?")) { return; }
+            var keepSubs = [];
+            for (var i = 0; i < submissions.length; i++) {
+                if (submissions[i].assignmentId !== id) { keepSubs.push(submissions[i]); }
+            }
+            submissions = keepSubs;
+            var keepAsg = [];
+            for (var j = 0; j < assignments.length; j++) {
+                if (assignments[j].id !== id) { keepAsg.push(assignments[j]); }
+            }
+            assignments = keepAsg;
+            saveData();
+            refresh();
+        }
+
+        function showGradebook() {
+            var myCourses = getMyCourses(currentUser);
+            var html = "<h2>Gradebook</h2><p class='small-note'>A score of " + PASSING + "% or higher is Passed.</p>";
+
+            for (var i = 0; i < myCourses.length; i++) {
+                var courseAsg = [];
+                for (var j = 0; j < assignments.length; j++) {
+                    if (assignments[j].courseId === myCourses[i].id) { courseAsg.push(assignments[j]); }
+                }
+                html += "<div class='card table-box'><h3>" + safe(myCourses[i].name) + "</h3><table><tr><th>Student</th>";
+                for (var c = 0; c < courseAsg.length; c++) {
+                    html += "<th>" + safe(courseAsg[c].title) + "</th>";
+                }
+                html += "<th>Overall</th></tr>";
+
+                for (var k = 0; k < enrollments.length; k++) {
+                    if (enrollments[k].courseId !== myCourses[i].id) { continue; }
+                    var student = findById(users, enrollments[k].studentId);
+                    var total = 0;
+                    var gradedCount = 0;
+                    html += "<tr><td>" + safe(student.name) + "</td>";
+                    for (var m = 0; m < courseAsg.length; m++) {
+                        var sub = findSubmission(courseAsg[m].id, student.id);
+                        if (sub && sub.grade !== null) {
+                            html += "<td>" + getResult(sub.grade, courseAsg[m].points) + " (" + sub.grade + "/" + courseAsg[m].points + ")</td>";
+                            total += (sub.grade / courseAsg[m].points) * 100;
+                            gradedCount++;
+                        } else if (sub) {
+                            html += "<td>submitted</td>";
+                        } else if (courseAsg[m].deadline < new Date().getTime()) {
+                            html += "<td>missing</td>";
+                        } else {
+                            html += "<td>-</td>";
+                        }
+                    }
+                    var overall = "-";
+                    if (gradedCount > 0) {
+                        if (total / gradedCount >= PASSING) { overall = "Passed"; } else { overall = "Failed"; }
+                    }
+                    html += "<td><strong>" + overall + "</strong></td></tr>";
+                }
+                html += "</table></div>";
+            }
+            if (myCourses.length === 0) { html += "<p class='small-note'>No courses yet.</p>"; }
+            document.getElementById("content").innerHTML = html;
+        }
+
+        // ===================== ASSIGNMENT PAGE (teacher + student) =====================
+        function showAssignment() {
+            var a = findById(assignments, selectedAssignment);
+            var allowed = false;
+            var mine = getMyAssignments(currentUser);
+            for (var i = 0; i < mine.length; i++) {
+                if (mine[i].id === selectedAssignment) { allowed = true; }
+            }
+            if (!a || !allowed) {
+                document.getElementById("content").innerHTML = "<p>Assignment not found or you have no access.</p>";
+                return;
+            }
+
+            var backPage = "dashboard";
+            if (currentUser.role === "teacher") { backPage = "assignments"; }
+
+            var html = "<button class='btn-outline' onclick=\"goTo('" + backPage + "')\">← Back</button>" +
+                "<div class='card' style='margin-top:1rem;'><h2>" + safe(a.title) + "</h2>" +
+                "<p class='small-note'>" + safe(findById(courses, a.courseId).name) + " · due " + formatDate(a.deadline) + " · " + a.points + " pts</p>" +
+                "<p style='white-space:pre-wrap;'>" + safe(a.instructions) + "</p>";
+            if (a.criteria) { html += "<p><strong>Criteria:</strong> " + safe(a.criteria) + "</p>"; }
+            html += "</div>";
+
+            if (currentUser.role === "student") {
+                html += studentSubmissionBox(a);
+            } else {
+                html += teacherSubmissionList(a);
+            }
+            document.getElementById("content").innerHTML = html;
+        }
+
+        function studentSubmissionBox(a) {
+            var sub = findSubmission(a.id, currentUser.id);
+            var status = getStatus(a, currentUser.id);
+            var html = "<div class='card'><h3>Your submission <span class='badge " + status.css + "'>" + status.text + "</span></h3>";
+
+            if (sub) {
+                html += "<p class='small-note'>Submitted " + formatDate(sub.date) + "</p><p style='white-space:pre-wrap;'>" + safe(sub.text) + "</p>";
+                if (sub.file) { html += "<p>📎 " + safe(sub.file.name) + "</p>"; }
+            }
+            if (sub && sub.grade !== null) {
+                // graded: students see only Passed or Failed plus feedback
+                html += "<div class='card'><strong>Result: " + getResult(sub.grade, a.points) + "</strong><p>" + safe(sub.feedback || "No feedback.") + "</p></div>";
+            } else {
+                var oldText = "";
+                if (sub) { oldText = safe(sub.text); }
+                html += "<div class='form-group'><label>Your answer (text or link)</label><textarea id='work-text' rows='4'>" + oldText + "</textarea></div>" +
+                    "<div class='form-group'><label>Attach a file (txt, pdf, image, doc - max 300 KB)</label><input type='file' id='work-file' accept='.txt,.pdf,.png,.jpg,.jpeg,.doc,.docx'></div>" +
+                    "<button class='btn-primary' onclick='submitWork(" + a.id + ")'>Submit</button>";
+            }
+            return html + "</div>";
+        }
+
+        function submitWork(assignmentId) {
+            var text = document.getElementById("work-text").value.trim();
+            var fileInput = document.getElementById("work-file");
+
+            if (fileInput.files.length > 0) {
+                var file = fileInput.files[0];
+                if (file.size > 300000) {
+                    alert("That file is too big (max 300 KB).");
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function () {
+                    saveSubmission(assignmentId, text, { name: file.name, data: reader.result });
+                };
+                reader.readAsDataURL(file);
+            } else {
+                saveSubmission(assignmentId, text, null);
+            }
+        }
+
+        function saveSubmission(assignmentId, text, file) {
+            var a = findById(assignments, assignmentId);
+            if (!a || !canSubmit(currentUser, a)) {
+                alert("You are not allowed to submit this.");
+                return;
+            }
+            if (text === "" && file === null) {
+                alert("Please type your answer or attach a file.");
+                return;
+            }
+            var old = findSubmission(assignmentId, currentUser.id);
+            if (old && old.grade !== null) {
+                alert("This work is already graded.");
+                return;
+            }
+            var now = new Date().getTime();
+            if (old) {
+                old.text = text;
+                old.file = file;
+                old.date = now;
+            } else {
+                submissions.push({ id: newId(), assignmentId: assignmentId, studentId: currentUser.id, text: text, file: file, date: now, grade: null, feedback: "" });
+            }
+            saveData();
+            alert("Submitted successfully!");
+            refresh();
+        }
+
+        function teacherSubmissionList(a) {
+            var html = "<div class='card'><h3>Submissions (" + countSubmitted(a.id) + "/" + countEnrolled(a.courseId) + ")</h3>";
+            html += "<p class='small-note'>Enter a score out of " + a.points + ". " + PASSING + "% or higher (" + Math.ceil(a.points * PASSING / 100) + "+) is Passed.</p>";
+
+            for (var i = 0; i < enrollments.length; i++) {
+                if (enrollments[i].courseId !== a.courseId) { continue; }
+                var student = findById(users, enrollments[i].studentId);
+                var sub = findSubmission(a.id, student.id);
+
+                html += "<div class='row' style='align-items:flex-start;'><div style='flex:1; min-width:220px;'><strong>" + safe(student.name) + "</strong> ";
+                if (sub) {
+                    var late = "";
+                    if (sub.date > a.deadline) { late = "late · "; }
+                    html += "<span class='badge'>" + late + formatDate(sub.date) + "</span><p style='white-space:pre-wrap;'>" + safe(sub.text) + "</p>";
+                    if (sub.file) {
+                        html += "<p><a href='" + sub.file.data + "' download='" + safe(sub.file.name) + "'>📎 " + safe(sub.file.name) + "</a></p>";
+                    }
+                    html += "</div><div style='width:240px;'>";
+                    var gradeValue = "";
+                    if (sub.grade !== null) { gradeValue = sub.grade; }
+                    html += "<label>Score / " + a.points + "</label><input type='number' id='grade-" + sub.id + "' value='" + gradeValue + "'>" +
+                        "<label style='margin-top:6px;'>Feedback</label><textarea id='fb-" + sub.id + "' rows='2'>" + safe(sub.feedback) + "</textarea>" +
+                        "<button class='btn-primary btn-small' style='margin-top:6px;' onclick='saveGrade(" + sub.id + ")'>Save grade</button></div>";
+                } else {
+                    var css = "";
+                    var word = "not yet";
+                    if (a.deadline < new Date().getTime()) { css = "badge-overdue"; word = "missing"; }
+                    html += "<span class='badge " + css + "'>" + word + "</span></div>";
+                }
+                html += "</div>";
+            }
+            return html + "</div>";
+        }
+
+        function saveGrade(subId) {
+            var sub = findById(submissions, subId);
+            if (!sub || !canGrade(currentUser, sub)) {
+                alert("You are not allowed to grade this.");
+                return;
+            }
+            var a = findById(assignments, sub.assignmentId);
+            var grade = parseFloat(document.getElementById("grade-" + subId).value);
+            if (isNaN(grade) || grade < 0 || grade > a.points) {
+                alert("Enter a score from 0 to " + a.points);
+                return;
+            }
+            sub.grade = grade;
+            sub.feedback = document.getElementById("fb-" + subId).value;
+            saveData();
+            alert("Grade saved!");
+            refresh();
+        }
+
+        // ===================== STUDENT PAGES =====================
+        function showStudentDashboard() {
+            var myAssignments = getMyAssignments(currentUser);
+            var todo = [];
+            var finished = [];
+            var upcoming = 0, overdue = 0, passed = 0;
+
+            for (var i = 0; i < myAssignments.length; i++) {
+                var a = myAssignments[i];
+                var status = getStatus(a, currentUser.id);
+                if (findSubmission(a.id, currentUser.id)) { finished.push(a); } else { todo.push(a); }
+                if (status.text === "Not submitted") { upcoming++; }
+                if (status.text === "Overdue") { overdue++; }
+                if (status.text === "Passed") { passed++; }
+            }
+
+            var html = "<h2>Welcome, " + safe(currentUser.name) + "</h2><div class='stats'>" +
+                statBox(upcoming, "Upcoming") + statBox(overdue, "Overdue") + statBox(finished.length, "Completed") + statBox(passed, "Passed") + "</div>";
+
+            // the list is already sorted by deadline, so overdue ones come first
+            html += "<div class='card'><h3>To do (earliest deadline first)</h3>";
+            for (var j = 0; j < todo.length; j++) { html += assignmentRow(todo[j], currentUser.id); }
+            if (todo.length === 0) { html += "<p class='small-note'>Nothing pending 🎉</p>"; }
+            html += "</div><div class='card'><h3>Completed</h3>";
+            for (var k = 0; k < finished.length; k++) { html += assignmentRow(finished[k], currentUser.id); }
+            if (finished.length === 0) { html += "<p class='small-note'>No submissions yet.</p>"; }
+            html += "</div>";
+            document.getElementById("content").innerHTML = html;
+        }
+
+        function showStudentCourses() {
+            var myCourses = getMyCourses(currentUser);
+            var html = "<h2>My courses</h2>";
+            for (var i = 0; i < myCourses.length; i++) {
+                var count = 0;
+                for (var j = 0; j < assignments.length; j++) {
+                    if (assignments[j].courseId === myCourses[i].id) { count++; }
+                }
+                html += "<div class='card'><h3>" + safe(myCourses[i].name) + " <span class='badge'>" + safe(myCourses[i].code) + "</span></h3>" +
+                    "<p class='small-note'>Teacher: " + safe(findById(users, myCourses[i].teacherId).name) + " · " + count + " assignments</p></div>";
+            }
+            if (myCourses.length === 0) { html += "<p class='small-note'>You are not enrolled in any course yet.</p>"; }
+            document.getElementById("content").innerHTML = html;
+        }
+
+        function showGrades() {
+            var myAssignments = getMyAssignments(currentUser);
+            var passed = 0, failed = 0, graded = 0;
+            var rows = "";
+
+            for (var i = 0; i < myAssignments.length; i++) {
+                var a = myAssignments[i];
+                var sub = findSubmission(a.id, currentUser.id);
+                var result = "-";
+                var feedback = "";
+                if (sub && sub.grade !== null) {
+                    result = getResult(sub.grade, a.points);
+                    feedback = sub.feedback;
+                    graded++;
+                    if (result === "Passed") { passed++; } else { failed++; }
+                }
+                rows += "<tr><td>" + safe(a.title) + "</td><td>" + safe(findById(courses, a.courseId).code) + "</td><td>" + getStatus(a, currentUser.id).text +
+                    "</td><td>" + result + "</td><td style='white-space:normal;'>" + safe(feedback) + "</td></tr>";
+            }
+
+            var html = "<h2>My grade report</h2><div class='stats'>" + statBox(passed, "Passed") + statBox(failed, "Failed") + statBox(graded + "/" + myAssignments.length, "Graded") + "</div>" +
+                "<div class='card table-box'><table><tr><th>Assignment</th><th>Course</th><th>Status</th><th>Result</th><th>Feedback</th></tr>" + rows + "</table></div>";
+            document.getElementById("content").innerHTML = html;
+        }
+
+        // ===================== FLASHCARDS =====================
+        var study = null;
+        var quiz = null;
+        var quizTimer = null;
+
+        function showFlashcards() {
+            var myCourses = getMyCourses(currentUser);
+            var html = "<h2>Flashcards & quizzes</h2>";
+
+            if (currentUser.role === "teacher") {
+                var courseOptions = "";
+                for (var i = 0; i < myCourses.length; i++) {
+                    courseOptions += "<option value='" + myCourses[i].id + "'>" + safe(myCourses[i].name) + "</option>";
+                }
+                html += "<div class='card'><h3>New deck</h3>" +
+                    "<div class='form-group'><label>Course</label><select id='deck-course'>" + courseOptions + "</select></div>" +
+                    "<div class='form-group'><label>Title</label><input type='text' id='deck-title'></div>" +
+                    "<div class='form-group'><label>Cards (one per line: question | answer)</label><textarea rows='5' id='deck-cards'></textarea></div>" +
+                    "<button class='btn-primary' onclick='addDeck()'>Create deck</button></div>";
+            }
+
+            for (var j = 0; j < decks.length; j++) {
+                var d = decks[j];
+                var mine = false;
+                for (var k = 0; k < myCourses.length; k++) {
+                    if (myCourses[k].id === d.courseId) { mine = true; }
+                }
+                if (!mine) { continue; }
+
+                // best quiz score of this student for this deck
+                var best = "";
+                for (var q = 0; q < quizResults.length; q++) {
+                    if (quizResults[q].userId === currentUser.id && quizResults[q].deckId === d.id) {
+                        best = " · last quiz " + quizResults[q].score + "/" + quizResults[q].total;
+                    }
+                }
+                html += "<div class='card'><div class='row'><div><h3>" + safe(d.title) + "</h3><span class='small-note'>" + d.cards.length + " cards · " +
+                    safe(findById(courses, d.courseId).code) + best + "</span></div><div>" +
+                    "<button class='btn-primary' onclick='startStudy(" + d.id + ")'>Study</button> " +
+                    "<button class='btn-outline' onclick='startQuiz(" + d.id + ")'>Quiz</button>";
+                if (currentUser.role === "teacher") {
+                    html += " <button class='btn-primary btn-small btn-danger' onclick='deleteDeck(" + d.id + ")'>✕</button>";
+                }
+                html += "</div></div></div>";
+            }
+            html += "<div id='flash-area'></div>";
+            document.getElementById("content").innerHTML = html;
+        }
+
+        function addDeck() {
+            var courseId = parseInt(document.getElementById("deck-course").value);
+            var title = document.getElementById("deck-title").value.trim();
+            var lines = document.getElementById("deck-cards").value.split("\n");
+            var cards = [];
+            for (var i = 0; i < lines.length; i++) {
+                var parts = lines[i].split("|");
+                if (parts.length >= 2 && parts[0].trim() !== "" && parts[1].trim() !== "") {
+                    cards.push({ q: parts[0].trim(), a: parts[1].trim() });
+                }
+            }
+            var course = findById(courses, courseId);
+            if (!course || course.teacherId !== currentUser.id || title === "" || cards.length === 0) {
+                alert("Enter a title and at least one card like: question | answer");
+                return;
+            }
+            decks.push({ id: newId(), courseId: courseId, title: title, cards: cards });
+            saveData();
+            refresh();
+        }
+
+        function deleteDeck(id) {
+            var deck = findById(decks, id);
+            if (!deck || findById(courses, deck.courseId).teacherId !== currentUser.id) { return; }
+            var keep = [];
+            for (var i = 0; i < decks.length; i++) {
+                if (decks[i].id !== id) { keep.push(decks[i]); }
+            }
+            decks = keep;
+            saveData();
+            refresh();
+        }
+
+        // ----- study mode: flip the cards, missed cards come back later -----
+        function startStudy(deckId) {
+            clearTimeout(quizTimer);
+            quiz = null;
+            var deck = findById(decks, deckId);
+            var queue = [];
+            for (var i = 0; i < deck.cards.length; i++) { queue.push(i); }
+            queue.sort(function () { return Math.random() - 0.5; });
+            study = { deck: deck, queue: queue, total: queue.length, flipped: false, known: 0, streak: 0, flips: 0 };
+            showCard();
+        }
+
+        function showCard() {
+            var box = document.getElementById("flash-area");
+            if (study.queue.length === 0) {
+                box.innerHTML = "<div class='card' style='text-align:center;'><div style='font-size:3rem;'>🎉</div><h2>Deck mastered!</h2>" +
+                    "<p>You cleared all " + study.total + " cards.</p><button class='btn-primary' onclick='startStudy(" + study.deck.id + ")'>Study again</button></div>";
+                return;
+            }
+            var card = study.deck.cards[study.queue[0]];
+            var percent = Math.round((study.known / study.total) * 100);
+            var html = "<div class='card'><p>🔥 " + study.streak + " streak · " + study.known + "/" + study.total + " mastered</p>" +
+                "<div class='bar'><div style='width:" + percent + "%'></div></div>";
+            if (study.flipped) {
+                html += "<div class='flashcard back' onclick='flipCard()'>" + safe(card.a) + "</div>" +
+                    "<button class='btn-outline' onclick='nextCard(false)'>🔁 Still learning</button> " +
+                    "<button class='btn-primary' onclick='nextCard(true)'>✅ I knew it</button>";
+            } else {
+                html += "<div class='flashcard' onclick='flipCard()'>" + safe(card.q) + "</div><p class='small-note'>Click the card to flip it</p>";
+            }
+            box.innerHTML = html + "</div>";
+        }
+
+        function flipCard() {
+            study.flipped = !study.flipped;
+            showCard();
+        }
+
+        function nextCard(knewIt) {
+            var current = study.queue.shift();
+            if (knewIt) {
+                study.known++;
+                study.streak++;
+            } else {
+                study.streak = 0;
+                // put the missed card back a few cards later
+                var position = 3;
+                if (position > study.queue.length) { position = study.queue.length; }
+                study.queue.splice(position, 0, current);
+            }
+            study.flipped = false;
+            showCard();
+        }
+
+        // ----- quiz mode: multiple choice with a 15 second timer -----
+        function startQuiz(deckId) {
+            study = null;
+            var deck = findById(decks, deckId);
+            if (deck.cards.length < 2) {
+                alert("A quiz needs at least 2 cards.");
+                return;
+            }
+            var order = [];
+            for (var i = 0; i < deck.cards.length; i++) { order.push(i); }
+            order.sort(function () { return Math.random() - 0.5; });
+            quiz = { deck: deck, order: order, index: 0, score: 0, streak: 0, best: 0, options: [], picked: -1, missed: [] };
+            makeOptions();
+            showQuestion();
+        }
+
+        // the right answer + up to 3 wrong answers from other cards, mixed up
+        function makeOptions() {
+            var cards = quiz.deck.cards;
+            var right = cards[quiz.order[quiz.index]].a;
+            var options = [right];
+            var tries = 0;
+            while (options.length < 4 && options.length < cards.length && tries < 50) {
+                var randomCard = cards[Math.floor(Math.random() * cards.length)];
+                if (options.indexOf(randomCard.a) === -1) { options.push(randomCard.a); }
+                tries++;
+            }
+            options.sort(function () { return Math.random() - 0.5; });
+            quiz.options = options;
+            quiz.picked = -1;
+        }
+
+        function showQuestion() {
+            clearTimeout(quizTimer);
+            var box = document.getElementById("flash-area");
+            var total = quiz.deck.cards.length;
+
+            if (quiz.index >= total) {
+                var percent = Math.round((quiz.score / total) * 100);
+                var message = "Keep practicing, you will get there!";
+                if (percent >= PASSING) { message = "Great job, you passed!"; }
+                var html = "<div class='card' style='text-align:center;'><h2>" + quiz.score + "/" + total + " (" + percent + "%)</h2><p>" + message + " Best streak: 🔥 " + quiz.best + "</p>";
+                if (quiz.missed.length > 0) {
+                    html += "<p class='small-note'>Review these:</p>";
+                    for (var m = 0; m < quiz.missed.length; m++) {
+                        html += "<div class='row'><span>" + safe(quiz.missed[m].q) + "</span><strong>" + safe(quiz.missed[m].a) + "</strong></div>";
+                    }
+                }
+                box.innerHTML = html + "<br><button class='btn-primary' onclick='startQuiz(" + quiz.deck.id + ")'>Try again</button></div>";
+                return;
+            }
+
+            var card = quiz.deck.cards[quiz.order[quiz.index]];
+            var html2 = "<div class='card'><p>Question " + (quiz.index + 1) + " of " + total + " · 🔥 " + quiz.streak + " · score " + quiz.score + "</p>";
+            if (quiz.picked === -1) {
+                html2 += "<div class='bar timer'><div></div></div>";
+                quizTimer = setTimeout(timeIsUp, 15000);     // 15 seconds for each question
+            } else {
+                html2 += "<div class='bar'><div style='width:100%'></div></div>";
+            }
+            html2 += "<h3>" + safe(card.q) + "</h3>";
+            for (var i = 0; i < quiz.options.length; i++) {
+                var css = "option-btn";
+                if (quiz.picked !== -1) {
+                    if (quiz.options[i] === card.a) { css += " option-right"; }
+                    else if (i === quiz.picked) { css += " option-wrong"; }
+                }
+                html2 += "<button class='" + css + "' onclick='answerQuiz(" + i + ")'>" + (i + 1) + ". " + safe(quiz.options[i]) + "</button>";
+            }
+            if (quiz.picked !== -1) {
+                if (quiz.picked === -2) { html2 += "<p><strong>⏰ Time is up!</strong></p>"; }
+                else if (quiz.options[quiz.picked] === card.a) { html2 += "<p><strong>✅ Correct!</strong></p>"; }
+                else { html2 += "<p><strong>❌ Not quite.</strong></p>"; }
+                html2 += "<button class='btn-primary' onclick='nextQuestion()'>Next</button>";
+            }
+            box.innerHTML = html2 + "</div>";
+        }
+
+        function answerQuiz(i) {
+            if (quiz.picked !== -1) { return; }   // already answered
+            var card = quiz.deck.cards[quiz.order[quiz.index]];
+            quiz.picked = i;
+            if (quiz.options[i] === card.a) {
+                quiz.score++;
+                quiz.streak++;
+                if (quiz.streak > quiz.best) { quiz.best = quiz.streak; }
+            } else {
+                quiz.streak = 0;
+                quiz.missed.push(card);
+            }
+            showQuestion();
+        }
+
+        function timeIsUp() {
+            if (quiz && quiz.picked === -1) {
+                quiz.picked = -2;    // -2 means "ran out of time"
+                quiz.streak = 0;
+                quiz.missed.push(quiz.deck.cards[quiz.order[quiz.index]]);
+                showQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            quiz.index++;
+            if (quiz.index < quiz.deck.cards.length) {
+                makeOptions();
+            } else {
+                // quiz is finished, save the score
+                quizResults.push({ userId: currentUser.id, deckId: quiz.deck.id, score: quiz.score, total: quiz.deck.cards.length });
+                saveData();
+            }
+            showQuestion();
+        }
+
+        // ===================== ADMIN PAGES =====================
+        function showAdminDashboard() {
+            var html = "<h2>Admin dashboard</h2><div class='stats'>" + statBox(users.length, "Users") + statBox(courses.length, "Courses") +
+                statBox(assignments.length, "Assignments") + statBox(submissions.length, "Submissions") + "</div>" +
+                "<div class='card'><h3>Security checks</h3><button class='btn-primary' onclick='runTests()'>Run permission tests</button><div id='test-results'></div></div>";
+            document.getElementById("content").innerHTML = html;
+        }
+
+        function showUsers() {
+            var html = "<h2>Users</h2><div class='card table-box'><table><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr>";
+            var roles = ["student", "teacher", "admin"];
+            for (var i = 0; i < users.length; i++) {
+                html += "<tr><td>" + safe(users[i].name) + "</td><td>" + safe(users[i].email) + "</td><td>";
+                if (users[i].id === currentUser.id) {
+                    html += users[i].role + "</td><td></td></tr>";
+                } else {
+                    html += "<select style='width:auto;' onchange='setRole(" + users[i].id + ", this.value)'>";
+                    for (var r = 0; r < roles.length; r++) {
+                        var selected = "";
+                        if (users[i].role === roles[r]) { selected = " selected"; }
+                        html += "<option" + selected + ">" + roles[r] + "</option>";
+                    }
+                    html += "</select></td><td><button class='btn-primary btn-small btn-danger' onclick='deleteUser(" + users[i].id + ")'>Delete</button></td></tr>";
+                }
+            }
+            document.getElementById("content").innerHTML = html + "</table></div>";
+        }
+
+        function setRole(id, role) {
+            if (currentUser.role !== "admin") { return; }
+            findById(users, id).role = role;
+            saveData();
+            alert("Role updated!");
+        }
+
+        function deleteUser(id) {
+            if (currentUser.role !== "admin") { return; }
+            if (!confirm("Delete this user and their submissions?")) { return; }
+            var keepUsers = [];
+            for (var i = 0; i < users.length; i++) {
+                if (users[i].id !== id) { keepUsers.push(users[i]); }
+            }
+            users = keepUsers;
+            var keepSubs = [];
+            for (var j = 0; j < submissions.length; j++) {
+                if (submissions[j].studentId !== id) { keepSubs.push(submissions[j]); }
+            }
+            submissions = keepSubs;
+            var keepEnr = [];
+            for (var k = 0; k < enrollments.length; k++) {
+                if (enrollments[k].studentId !== id) { keepEnr.push(enrollments[k]); }
+            }
+            enrollments = keepEnr;
+            saveData();
+            refresh();
+        }
+
+        // checks that the permission rules really work
+        function runTests() {
+            var student1 = findById(users, 10);
+            var student2 = findById(users, 11);
+            var teacher = findById(users, 1);
+            var fakeTeacher = { id: 999, role: "teacher" };
+            var sub = findById(submissions, 1);
+            var a = findById(assignments, 3);
+            var tests = [];
+
+            if (!sub || !a || !student1 || !student2 || !teacher) {
+                document.getElementById("test-results").innerHTML = "<p>The demo data was changed, so the tests cannot run.</p>";
+                return;
+            }
+
+            tests.push(["Student cannot grade a submission", canGrade(student2, sub) === false]);
+            tests.push(["Student cannot edit an assignment", canEditAssignment(student1, a) === false]);
+            tests.push(["Another teacher cannot grade", canGrade(fakeTeacher, sub) === false]);
+            tests.push(["Course teacher can grade", canGrade(teacher, sub) === true]);
+
+            var seen = getVisibleSubmissions(student2);
+            var leaked = false;
+            for (var i = 0; i < seen.length; i++) {
+                if (seen[i].studentId !== student2.id) { leaked = true; }
+            }
+            tests.push(["Student cannot see another student's submission", leaked === false]);
+
+            var html = "";
+            for (var j = 0; j < tests.length; j++) {
+                var word = "FAIL";
+                var css = "badge-overdue";
+                if (tests[j][1]) { word = "PASS"; css = "badge-completed"; }
+                html += "<div class='row'><span>" + tests[j][0] + "</span><span class='badge " + css + "'>" + word + "</span></div>";
+            }
+            document.getElementById("test-results").innerHTML = html;
+        }
+
+        // ===================== LIGHT / DARK MODE =====================
+        function toggleTheme() {
+            var isDark = document.body.classList.toggle("dark");
+            document.getElementById("theme-btn").innerHTML = isDark ? "🔆" : "🌙";
+            try {
+                localStorage.setItem("group7_theme", isDark ? "dark" : "light");
+            } catch (e) { }
+        }
+
+        function loadTheme() {
+            var saved = null;
+            try { saved = localStorage.getItem("group7_theme"); } catch (e) { }
+            if (saved === "dark") {
+                document.body.classList.add("dark");
+                document.getElementById("theme-btn").innerHTML = "🔆";
+            }
+        }
+
+        // ===================== START THE PROGRAM =====================
+        loadData();
+        loadTheme();
+        loadRememberedEmail();
+    </script>
+
+    <!-- icons for the login boxes -->
+    <script type="module" src="https://unpkg.com/ionicons@8.0.13/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@8.0.13/dist/ionicons/ionicons.js"></script>
+</body>
+</html>

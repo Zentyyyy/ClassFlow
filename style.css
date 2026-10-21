@@ -1,0 +1,564 @@
+/* Group 7 LMS - style.css */
+
+/* ---------- colors (light mode) ---------- */
+:root {
+    --primary: #4f46e5;
+    --success: #12805c;
+    --warning: #b7791f;
+    --danger: #c0392b;
+    --bg: #f5f6fa;
+    --card-bg: #ffffff;
+    --text: #1d2433;
+    --muted: #667085;
+    --border: #e3e6ee;
+    --on-primary: #ffffff;
+    --ok-bg: #e3f6ee;
+    --bad-bg: #fdeceb;
+    --warn-bg: #fdf3dc;
+}
+
+/* ---------- colors (dark mode) ---------- */
+body.dark {
+    --primary: #8b8cf8;
+    --success: #4cd6a0;
+    --warning: #f0c15c;
+    --danger: #ff8a7d;
+    --bg: #12141c;
+    --card-bg: #1b1e29;
+    --text: #e8eaf2;
+    --muted: #9aa1b5;
+    --border: #2d3243;
+    --on-primary: #12141c;
+    --ok-bg: #12332a;
+    --bad-bg: #3a1d1b;
+    --warn-bg: #3a2f14;
+}
+
+/* ---------- body ---------- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+h2 {
+    font-family: Georgia, serif;
+    margin-top: 0;
+}
+
+h3 {
+    font-family: Georgia, serif;
+    margin-top: 0;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+}
+
+/* ---------- header ---------- */
+header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+header h1 {
+    margin: 0 1rem 0 0;
+    font-size: 1.05rem;
+    font-family: Georgia, serif;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+/* ---------- tabs ---------- */
+#nav {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+}
+
+#nav button {
+    position: relative;
+    z-index: 1;
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.25s;
+}
+
+#nav button:hover {
+    transform: translateY(-2px);
+}
+
+#nav button.active {
+    color: var(--on-primary);
+}
+
+/* the colored box behind the active tab */
+#pill {
+    position: absolute;
+    z-index: 0;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    background: var(--primary);
+    border-radius: 8px;
+    transition: left 0.4s, width 0.4s;
+}
+
+/* ---------- page animation ---------- */
+#content.slide,
+#login-view {
+    animation: slideIn 0.4s;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ---------- cards ---------- */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(30, 40, 80, 0.07);
+}
+
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 650px) {
+    .two-col {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------- forms ---------- */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* ---------- buttons ---------- */
+button.btn-outline {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--primary);
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s;
+}
+
+button.btn-outline:hover {
+    background: var(--border);
+    transform: translateY(-2px);
+}
+
+button.btn-primary {
+    background-color: var(--primary);
+    color: var(--on-primary);
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.25s;
+}
+
+button.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(30, 40, 80, 0.16);
+}
+
+button.btn-primary:active {
+    transform: scale(0.96);
+}
+
+button.btn-small {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+}
+
+button.btn-danger {
+    background-color: var(--danger);
+    color: white;
+}
+
+/* ---------- tables ---------- */
+.table-box {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border-bottom: 1px solid var(--border);
+    padding: 0.6rem;
+    text-align: left;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+th {
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 0.8rem;
+}
+
+/* ---------- list rows ---------- */
+.row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.row:last-child {
+    border-bottom: none;
+}
+
+.row.overdue {
+    border-left: 4px solid var(--danger);
+    padding-left: 0.6rem;
+}
+
+.row a {
+    color: var(--text);
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.row a:hover {
+    color: var(--primary);
+}
+
+/* ---------- badges ---------- */
+.badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    background: var(--border);
+}
+
+.badge-overdue {
+    background-color: var(--bad-bg);
+    color: var(--danger);
+}
+
+.badge-upcoming {
+    background-color: var(--warn-bg);
+    color: var(--warning);
+}
+
+.badge-completed {
+    background-color: var(--ok-bg);
+    color: var(--success);
+}
+
+/* ---------- stat boxes ---------- */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+}
+
+.stat-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.9rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.stat-box strong {
+    display: block;
+    font-size: 1.7rem;
+    color: var(--text);
+}
+
+.small-note {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+/* ---------- progress bar and timer ---------- */
+.bar {
+    height: 8px;
+    background: var(--border);
+    border-radius: 9px;
+    overflow: hidden;
+    margin-bottom: 0.6rem;
+}
+
+.bar div {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.3s;
+}
+
+.bar.timer div {
+    background: var(--warning);
+    animation: shrink 15s linear forwards;
+}
+
+@keyframes shrink {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0;
+    }
+}
+
+/* ---------- flashcards ---------- */
+.flashcard {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 1.3rem;
+    padding: 1rem;
+    border: 2px solid var(--primary);
+    border-radius: 16px;
+    cursor: pointer;
+    margin: 1rem 0;
+    background: var(--card-bg);
+    animation: flip 0.2s;
+}
+
+.flashcard.back {
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+@keyframes flip {
+    from {
+        transform: rotateY(-90deg);
+    }
+    to {
+        transform: rotateY(0);
+    }
+}
+
+/* ---------- quiz options ---------- */
+.option-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin-bottom: 0.5rem;
+    padding: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.25s;
+}
+
+.option-btn:hover {
+    transform: translateY(-2px);
+}
+
+.option-right {
+    background: var(--ok-bg);
+    border-color: var(--success);
+}
+
+.option-wrong {
+    background: var(--bad-bg);
+    border-color: var(--danger);
+}
+
+/* ---------- login / register / forgot password ---------- */
+.login-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 65vh;
+}
+
+.login-box {
+    width: 400px;
+    max-width: 100%;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.login-box h2 {
+    text-align: center;
+    font-size: 2em;
+}
+
+.login-box a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.input-box {
+    position: relative;
+    width: 100%;
+    margin: 30px 0;
+    border-bottom: 2px solid var(--text);
+}
+
+.input-box label {
+    position: absolute;
+    top: 50%;
+    left: 5px;
+    transform: translateY(-50%);
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    color: var(--text);
+    pointer-events: none;
+    transition: 0.4s;
+}
+
+/* the label moves up when you click or type in the box */
+.input-box input:focus ~ label,
+.input-box input:not(:placeholder-shown) ~ label,
+.input-box.static label {
+    top: -5px;
+    font-size: 0.8em;
+}
+
+.input-box input,
+.input-box select {
+    height: 50px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    outline: none;
+    padding: 0 35px 0 5px;
+}
+
+.input-box select option {
+    background: var(--card-bg);
+}
+
+.input-box .icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2em;
+}
+
+.remember-forgot {
+    margin: -15px 0 15px;
+    font-size: 0.9em;
+    display: flex;
+    justify-content: space-between;
+}
+
+.remember-forgot label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    font-weight: normal;
+    color: var(--text);
+}
+
+.remember-forgot input {
+    width: auto;
+}
+
+.login-box button[type=submit] {
+    width: 100%;
+    height: 42px;
+    background: var(--primary);
+    color: var(--on-primary);
+    border: none;
+    border-radius: 40px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.25s;
+}
+
+.login-box button[type=submit]:hover {
+    transform: translateY(-2px);
+}
+
+.register-link {
+    font-size: 0.9em;
+    text-align: center;
+    margin: 25px 0 10px;
+}
+
+.register-link p {
+    margin: 0.4rem 0;
+}
