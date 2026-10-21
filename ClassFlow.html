@@ -175,7 +175,7 @@
         function saveData() {
             var all = { users: users, courses: courses, enrollments: enrollments, assignments: assignments, submissions: submissions, decks: decks, quizResults: quizResults };
             try {
-                localStorage.setItem("group7_lms", JSON.stringify(all));
+                localStorage.setItem("group7", JSON.stringify(all));
             } catch (e) {
                 alert("Could not save your data (storage is full or blocked).");
             }
@@ -184,7 +184,7 @@
         function loadData() {
             var saved = null;
             try {
-                saved = JSON.parse(localStorage.getItem("group7_lms"));
+                saved = JSON.parse(localStorage.getItem("group7"));
             } catch (e) {
                 saved = null;
             }
@@ -590,6 +590,7 @@
 
         function showTeacherCourses() {
             var myCourses = getMyCourses(currentUser);
+
             var courseOptions = "";
             for (var i = 0; i < myCourses.length; i++) {
                 courseOptions += "<option value='" + myCourses[i].id + "'>" + safe(myCourses[i].code) + " - " + safe(myCourses[i].name) + "</option>";
@@ -1281,6 +1282,7 @@
             findById(users, id).role = role;
             saveData();
             alert("Role updated!");
+            refresh();
         }
 
         function deleteUser(id) {
