@@ -562,3 +562,15 @@ th {
 .register-link p {
     margin: 0.4rem 0;
 }
+
+/* ---------- admin: remove (x) button inside a badge ---------- */
+.badge a {
+    cursor: pointer;
+    color: var(--danger);
+    font-weight: bold;
+    margin-left: 0.3rem;
+}
+
+.badge a:hover {
+    text-decoration: underline;
+}
